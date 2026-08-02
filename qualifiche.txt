@@ -1,0 +1,12 @@
+Classifica
+Pilota			Tempo		Distacco
+Pilota 9		33.140		0.000
+Pilota 4		33.403		0.263
+Pilota 10		51.861		18.721
+Pilota 8		65.233		32.093
+Pilota 1		74.638		41.498
+Pilota 5		75.241		42.101
+Pilota 2		87.894		54.754
+Pilota 3		98.351		65.211
+Pilota 6		100.425		67.285
+Pilota 7		112.859		79.719

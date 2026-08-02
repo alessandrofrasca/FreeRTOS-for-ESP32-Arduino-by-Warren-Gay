@@ -1,0 +1,11 @@
+The following data types are used frequently:
+- TickType_t: 32-bit unsigned integer, which refers to system ticks;
+- BaseType_t: 32-bit unsigned integer, whose use ensures efficiency on the hardware platform.
+The variable names in FreeRTOS use the following prefixes:
+- 'c', char type;
+- 's', short type;
+- 'l', long type;
+- 'x', TickType_t, BaseType_t and more;
+- 'v', void type.
+In addition, the prefix 'u' stands for 'unsigned' (e.g: 'us' stands for 'unsigned short') and, if the variable is a pointer, the name is prefixed with 'p' (e.g: 'pc' stands for 'pointer to char').
+Function names are prefixed with two components: first, the data type of the value returned, then the file the function is defined in (e.g: 'vTaskPrioritySet()' is a function defined in 'task.c' and returns a void).
