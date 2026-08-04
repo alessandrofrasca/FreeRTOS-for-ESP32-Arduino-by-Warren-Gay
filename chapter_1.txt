@@ -1,0 +1,6 @@
+A process is an application running in isolation, as it possesses its own logical memory. 
+Somebody can choose to create subprocesses—known as threads—within a process. These are significant because creating or destroying a process is a resource-intensive operation for the CPU and RAM (due to the need to allocate logical memory), whereas creating or stopping a thread is far simpler. 
+Processes cannot exchange data because they run in isolated environments, whereas threads can, as they share access to the logical memory of their parent process.
+When the process is handed over to the scheduler, threads are executed individually (which helps prevent infinite loops), and multiple threads can run simultaneously on multicore CPUs. Notably, the scheduler's queue consists of the collective set of threads originating from various processes.
+In FreeRTOS, it is as if there were a single, large process containing the threads (tasks). Consequently, all tasks have access to the same logical memory.
+Running my program requires a task, and there are background FreeRTOS tasks; some of them handle WiFi, timers, and Bluetooth. loopTask is the main Arduino task that calls setup() and loop().
