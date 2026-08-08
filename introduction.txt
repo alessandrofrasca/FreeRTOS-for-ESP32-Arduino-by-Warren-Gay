@@ -15,6 +15,6 @@ Macro names are given in uppercase, except for a prefix that indicates where the
 Arduino IDE maps 'digital pin x' to a port and pin combinations in different platforms. On the ATmega328P digital pin x maps to pin PD3, om the ESP32 to 'GPIO x' (GPIO stands for 'General Purpose Input/Output').
 The ESP32 has hardware limitations for GPIO (e.g: GPIO 34 to 39 inclusive can only be used for input).
 SPI (Serial Peripheral Interface) is frequently used within ESP32: ESP32's SPI Flash equals to a common computer's hard disk (permanent memory).
-ESP32's SRAM (Serial Random Access Memory) equals to a common computer's RAM.
+ESP32's SRAM (Static Random Access Memory) equals to a common computer's RAM.
 GPIO 6 to 11 are connected to the integrated SPI Flash.
 The ESP32 device uses 3.3 volt GPIO ports and none are 5 volts tolerant. Inputs should never be subjected to above 3.3 + 0.6 volts (3.9 volts represent ESP32's physical limit).
