@@ -183,7 +183,7 @@ void setup() {
 
 void loop(){
   // The task deletes itself (in this case, loopTask deletes itself) as soon as vTaskDelete() is called. However when the stack memory gets released depends upon who the caller is.
-  //If, on the other hand, the task is deleted by another task, the task's stack memory is released immediately.
+  // If, on the other hand, the task is deleted by another task, the task's stack memory is released immediately.
   // We can also delete a static task using the vTaskDelete() function: the stack memory will not be released (once it is occupied, we cannot free it) until the ESP32 is off, but the TCB will be modified to make it impossible to associate the deleted task with its memory again.
   vTaskDelete(nullptr); // If we wanted to delete another task, instead of `nullptr`, I would need to insert the name of the handle for the task to be deleted.
 }
@@ -198,9 +198,81 @@ void loop(){
   vTaskResume(leds[1].taskh);
 }
 // If it is not possible to access a task's handle within the task function, the following function can be used:
-TaskType_t taskh = xTaskGetCurrentTaskHandle();
+TaskHandle_t taskh = xTaskGetCurrentTaskHandle();
 
 /*
 The scheduler assigns a time slice to each running task. But how long is the time slice?
 To measure it, an oscilloscope and two competing tasks are needed: one writes HIGH to a GPIO pin, and the other (running on the same CPU) writes LOW to the same pin.
 */
+// Demonstration using the 'gpio_on' and 'gpio_off' tasks:
+#define GPIO 12 // We will be using GPIO 12.
+
+static void gpio_on(void* args){
+  for (;;){
+    digitalWrite(GPIO, HIGH);
+  }
+}
+
+static void gpio_off(void* args){
+  for (;;){
+    digitalWrite(GPIO, LOW);
+  }
+}
+
+void setup(){
+  int app_cpu = xPortGetCoreID();
+
+  pinMode(GPIO, OUTPUT);
+  delay(1000);
+  printf("Setup started..\n");
+
+  xTaskCreatePinnedToCore(
+    gpio_on,
+    "gpio_on",
+    2048,
+    nullptr, // We could have just inserted 'NULL'.
+    1, // Priority level 1 works, since only these two tasks will be running on CPU 1. There is actually a third one with very high priority, but it is unlikely to execute.
+    nullptr, // We are not interested in having a handle, as we can easily get one through xTaskGetCurrentTaskHandle().
+    app_cpu
+  );
+
+  xTaskCreatePinnedToCore(
+    gpio_off,
+    "gpio_off",
+    2048,
+    nullptr, 
+    1, 
+    nullptr,
+    app_cpu
+  );
+}
+
+void loop(){
+  vTaskDelete(xTaskGetCurrentTaskHandle()); // Removing the task currently executing in the scheduler (which is loopTask). To delete loopTask, we wait for it to be running. It will certainly be running when the loop() function (which belongs to loopTask) is executing. We could have used vTaskDelete(NULL) or vTaskDelete(nullptr) as well.
+}
+
+/*
+By looking at the oscilloscope, we can see that the distance between two peaks (which is when GPIO 12 receives current, indicating that the `gpio_on` task is running) is 1 millisecond (the time slice we were looking for). Therefore, the scheduler could execute approximately 1,000 tasks in one second.
+*/
+// If, however, the gpio_on task were to finish ahead of schedule (and thus not require the full time slice) we could use the `taskYIELD()` function to save time; as soon as it is encountered, the task yields control of the scheduler to another ready-to-run task of the same priority.
+static void gpio_on(void* args){
+  for (;;){
+    for(short x = 0; x<1000; x++){ // This loop takes way less than 1 millisecond.
+      digitalWrite(GPIO, HIGH);
+    }
+    taskYIELD(); // However, the task replacing gpio_on (in this case, the gpio_off task) will not have a full time slice, but only the remaining portion (meaning it will run for less than 1 millisecond). As soon as the tick ends, gpio_on will resume its place on the scheduler, and so on. We are assuming there are only two tasks of the same priority.
+    // The scheduler resumes gpio_on from the point where it was left off (specifically, after taskYIELD()) and the x loop executes again because of the (;;) one.
+  }
+}
+// If a higher-priority task were to arrive, the execution of gpio_on or gpio_off would obviously be suspended immediately, and neither would execute again as long as the high-priority task was running.
+/*
+It is important to check for errors and, if any are found, abort the program.
+A useful macro from `assert.h` (already included in the Arduino ESP32 environment) is assert(condition). If the condition is false, the program aborts (the ESP32 restarts), and the line containing the assert`s statement is reported in the serial monitor.
+Brief example:
+*/
+TaskHandle_t taskh;
+// ...
+void setup(){
+  // ...
+  assert(taskh != nullptr); // If the task handle is missing (i.e., the variable `taskh` is NULL), it aborts the program.
+}
