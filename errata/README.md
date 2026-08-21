@@ -1,2 +1,0 @@
-This subfolder contains some corrections I have made to the errors I identified in the book.
-In the 'notes' subfolder, I have automatically included the codes I corrected, whereas in this folder you can see the version prior to the correction too.
