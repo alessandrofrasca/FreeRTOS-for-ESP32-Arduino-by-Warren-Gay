@@ -73,11 +73,67 @@ static void debounce_task(void* argp){
     */  
       if (level != last){ // It is useful to prevent situations where the button remains pressed or unpressed for a long time. If we hold down the button, level=last (1=1). If we do not hold it down, level=last (0=0). In both cases, the process proceeds to yielding the time slice.
         event = !!level; // `event = level` would have been enough.
-        if (xQueueSendToBack(qh, &item, 1) == pdPASS){ 
+        if (xQueueSendToBack(qh, &event, 1) == pdPASS){ 
           last = level;
         }
       }
-      taskYIELD();
+    }
+    taskYIELD();
+  }
+}
+
+static void led_task(void* agrp){
+  bool led = false, event;
+  BaseType_t rc;
+  digitalWrite(GPIO_LED, led); // At the beginning, the LED is off.
+  for (;;){
+    rc = xQueueReceive(qh, &event, portMAX_DELAY);
+    assert(rc == pdPASS); // If the returned code is not equal to 'pdPASS', it is time to abort the program.
+    if (!event){ //
+      led ^= true; // Which means led = led ^ 1, therefore if we press the button (event=0) and the led is already on, it gets turned off.
+      digitalWrite(GPIO_LED, led);
     }
   }
+}
+
+void setup() {
+  int app_cpu = xPortGetCoreID();
+  BaseType_t rc;
+  TaskHandle_t debounce_taskh;
+  TaskHandle_t led_taskh;
+
+  delay(2000); // We are allowing USB to connect.
+  qh = xQueueCreate(40, sizeof(bool));
+  assert(qh);
+
+  pinMode(GPIO_LED, OUTPUT);
+  pinMode(GPIO_BUTTON, INPUT_PULLUP); // The button has a pull-up resistor; consequently, the pin reads HIGH (1 or true) when we are not pressing the button, and LOW (0 or false) when we press it.
+
+  rc = xTaskCreatePinnedToCore(
+    debounce_task,
+    "debounce",
+    2048,
+    nullptr,
+    1,
+    &debounce_taskh,
+    app_cpu
+  );
+  assert(rc==pdPASS);
+  assert(debounce_taskh); // `debounce_task == true` evaluates to true for any value of `debounce_task` other than 0 or NULL. If it is equal to 0 (and 0 corresponds to NULL), then the assertion condition is violated.
+
+  rc = xTaskCreatePinnedToCore(
+    led_task,
+    "led",
+    2048,
+    nullptr,
+    1,
+    &led_taskh,
+    app_cpu
+  );
+  assert(rc==pdPASS);
+  assert(led_taskh);
+}
+
+void loop(){
+  vTaskDelete(nullptr); // Because we are not using loopTask.
 }
